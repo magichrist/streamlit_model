@@ -10,7 +10,7 @@ streamlit==1.42.2
 streamlit-authenticator==0.4.2
 streamlit-chat==0.1.1
 streamlit-extras==0.6.0
-yfinance==0.2.54
 seaborn==0.13.2
 streamlit-authenticator==0.4.2
 yellowbrick==1.5
+cctx==1.0.0

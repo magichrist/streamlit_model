@@ -4,9 +4,10 @@ from matplotlib import pyplot as plt
 import seaborn as sb
 import sklearn
 from sklearn.model_selection import train_test_split
-import pandas as pd
 import pickle
-from pages.Regress import modeling
+import time
+import sklearn.cluster
+import sklearn.naive_bayes
 
 try:
     from yellowbrick.cluster import KElbowVisualizer
@@ -14,12 +15,10 @@ except Exception as e:
     st.error("Please install yellowbrick")
 
 sb.set()
-
-
 keys = st.session_state.keys()
 if any(i not in keys for i in
        ["n_samples", "no_of_saving", "data_preprocessing",
-        "n_features", "centers_std", "seed","xcenters", "lock_seed","xdata","xy","model"]):
+        "n_features", "centers_std", "seed", "xcenters", "lock_seed", "xdata", "xy", "model"]):
     st.session_state.n_samples = 200
     st.session_state.n_features = 5
     st.session_state.xcenters = 2
@@ -34,8 +33,9 @@ if any(i not in keys for i in
     st.session_state.data_preprocessing = None
     st.session_state.no_of_saving = 0
 
-
 st.cache_resource(show_spinner="Loading normalizer")
+
+
 def fixer_preprocessing():
     try:
         fixer = getattr(sklearn.preprocessing, st.session_state.data_preprocessing)
@@ -45,6 +45,8 @@ def fixer_preprocessing():
 
 
 st.cache_data(show_spinner="Creating data ...")
+
+
 def generate_df():
     n_samples = st.session_state.n_samples
     n_features = st.session_state.n_features
@@ -63,6 +65,8 @@ def generate_df():
 
 
 st.cache_data()
+
+
 def poof(data, y, centers):
     fig, ax = plt.subplots()
     ax.set_title(
@@ -75,10 +79,10 @@ def poof(data, y, centers):
 if "first_time" not in st.session_state:
     st.session_state.first_time = False
     st.session_state.xdata, st.session_state.xy, st.session_state.xcenters = generate_df()
-    modeling()
-
 
 st.cache_resource(show_spinner="Loading model ...")
+
+
 def model_train():
     data = st.session_state.xdata
     y = st.session_state.xy
@@ -120,7 +124,8 @@ def model_train():
             plt.clf()
         except Exception as e:
             st.error("KElbow failed.")
-    col2.download_button("Download model", data=pickle.dumps(m), file_name=f"{model_input}.pkl", mime="application/octet-stream")
+    col2.download_button("Download model", data=pickle.dumps(m), file_name=f"{model_input}_{time.time()}.pkl",
+                         mime="application/octet-stream")
     return x_test, preds, center
 
 
@@ -163,4 +168,4 @@ with Tab2:
     if st.session_state.xdata is not None and st.session_state.xy is not None:
         st.pyplot(fig=poof(*model_train()))
 
-st.sidebar.button("clear cache",on_click=lambda:st.cache_data.clear())
+st.sidebar.button("clear cache", on_click=lambda: st.cache_data.clear())
