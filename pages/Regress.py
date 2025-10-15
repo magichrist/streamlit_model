@@ -14,8 +14,7 @@ from sklearn.metrics import mean_absolute_percentage_error as mape
 from sklearn.metrics import mean_squared_error as mse
 import numpy as np
 import plotly.graph_objects as go
-from ccxt import binance,bingx,kraken,kucoin,bybit,bitget,mexc,okx,coinex
-
+import ccxt
 from warnings import filterwarnings
 
 filterwarnings('ignore')
@@ -37,24 +36,29 @@ exchanges_list=[
 ]
 
 def ticker():
+    exchange_choice=st.session_state.exchange
     try:
-        exchange=mexc()
-        data = exchange.fetch_ohlcv(symbol=st.session_state.ticker, timeframe="1d")
+        exchange=getattr(ccxt,exchange_choice)
+        exchange=exchange()
+        data = exchange.fetch_ohlcv(symbol=st.session_state.ticker, timeframe="1d",limit=2000)
     except Exception:
         st.error(f"Error fetching data")
     data = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume"])
     data['timestamp'] = pd.to_datetime(data['timestamp'], unit='ms')
+    data=data.set_index(data["timestamp"])
     data["Mid"] = (data["high"] + data["low"]) / 2
     data = data.dropna()
     data = data[["volume", "Mid","timestamp"]]
+    st.session_state.data_len=len(data)
     return data
 
-if any(key not in st.session_state.keys() for key in ["preds", "ticker", "data", "batch_size", "tab3_seed"]):
+if any(key not in st.session_state.keys() for key in ["preds", "ticker", "data", "batch_size", "tab3_seed","exchange"]):
     st.session_state.preds = None
     st.session_state.ticker = "ADA/USDT"
     st.session_state.data = 1
     st.session_state.batch_size = 30
     st.session_state.tab3_seed = None
+    st.session_state.exchange="kraken"
     st.session_state.data = ticker()
 
 
@@ -127,7 +131,6 @@ def modeling():
 
         data = data.iloc[batch_size:].copy()  # Remove first few NaN rows
         data["x"] = x_values  # Assign he collected sequences
-        st.dataframe(data)
         data = data.dropna()
         x_train, x_test, y_train, y_test = train_test_split(data["x"].tolist(), data["Mid"], shuffle=False,
                                                             test_size=0.1)
@@ -166,7 +169,7 @@ with tab1:
             if st.session_state.data.empty:
                 st.error("Ticker not found!")
             else:
-                st.success("Data Loaded Successfully!")
+                st.success(f"Data Loaded Successfully! {st.session_state.data_len} DPs")
 
 with tab2:
     with st.form("model_form"):
@@ -200,6 +203,8 @@ with tab2:
                 hovermode="x unified",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
             st.plotly_chart(fig, use_container_width=True)
+            st.write("There is always chances of error in prediction.")
+            st.write("Good Validation could be cuase of overfitting.")
             st.table(st.session_state.days_ahead_prices)
 
 st.sidebar.button("clear cache", on_click=lambda: st.cache_data.clear())
@@ -223,8 +228,10 @@ with tab3:
             preds=st.session_state.preds
             y_test=st.session_state.y_test
             df[model] = st.session_state.days_ahead_prices
-            df["MAPE"]=mape(y_test,preds)
-            df["MSE"]=mse(y_test,preds)
+            st.title(model)
+            st.dataframe(preds)
+            df["MAPE"]=mape(y_test,preds["preds"])
+            df["MSE"]=mse(y_test,preds["preds"])
 
         if df is not None:
             ex = st.expander("Prediction")
@@ -234,3 +241,5 @@ with tab3:
             for i in df.drop(columns=["MAPE","MSE"]).columns:
                 fig.add_trace(go.Scatter(x=df.index, y=df[i], mode="lines", name=i))
             st.plotly_chart(fig)
+
+
