@@ -31,37 +31,39 @@ models = ["Linear Regression", "Support Vector Regression",
 
 st.cache_data(show_spinner="Loading data ...")
 
-exchanges_list=[
-    "binance","bingx","kraken","kucoin","bybit","bitget","mexc","okx","coinex"
+exchanges_list = [
+    "binance", "bingx", "kraken", "kucoin", "bybit", "bitget", "mexc", "okx", "coinex"
 ]
 
-def ticker():
-    exchange_choice=st.session_state.exchange
-    try:
-        exchange=getattr(ccxt,exchange_choice)
-        exchange=exchange()
-        data = exchange.fetch_ohlcv(symbol=st.session_state.ticker, timeframe="1d",limit=2000)
-    except Exception:
-        st.error(f"Error fetching data")
-    data = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume"])
-    data['timestamp'] = pd.to_datetime(data['timestamp'], unit='ms')
-    data=data.set_index(data["timestamp"])
-    data["Mid"] = (data["high"] + data["low"]) / 2
-    data = data.dropna()
-    data = data[["volume", "Mid","timestamp"]]
-    st.session_state.data_len=len(data)
-    return data
 
-if any(key not in st.session_state.keys() for key in ["preds", "ticker", "data", "batch_size", "tab3_seed","exchange"]):
+def ticker():
+    exchange_choice = st.session_state.exchange
+    try:
+        exchange = getattr(ccxt, exchange_choice)
+        exchange = exchange()
+        data = exchange.fetch_ohlcv(symbol=st.session_state.ticker, timeframe="1d", limit=2000)
+        data = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume"])
+        data['timestamp'] = pd.to_datetime(data['timestamp'], unit='ms')
+        data = data.set_index(data["timestamp"])
+        data["Mid"] = (data["high"] + data["low"]) / 2
+        data = data.dropna()
+        data = data[["volume", "Mid", "timestamp"]]
+        st.session_state.data_len = len(data)
+        return data
+    except Exception:
+        st.error(f"Error fetching data \nReload and submit again!")
+        st.error(f"Tips: 1. Use VPN \n2. Use Kucoin or Bitget")
+
+
+if any(key not in st.session_state.keys() for key in
+       ["preds", "ticker", "data", "batch_size", "tab3_seed", "exchange"]):
     st.session_state.preds = None
     st.session_state.ticker = "ADA/USDT"
     st.session_state.data = 1
     st.session_state.batch_size = 30
     st.session_state.tab3_seed = None
-    st.session_state.exchange="kraken"
+    st.session_state.exchange = "kucoin"
     st.session_state.data = ticker()
-
-
 
 # Map for coins with their emojis
 options = {
@@ -120,7 +122,7 @@ def modeling():
         elif model_input == "MLPRegressor":
             final_model = MLPRegressor()
         else:
-            st.error("Unknow model or bad parameter!")
+            st.error("Unknown model or bad parameter!")
         whole = len(data)
         batch_size = st.session_state.batch_size
         x_values = []
@@ -160,12 +162,13 @@ tab1, tab2, tab3 = st.tabs(["Data", "Model", "Environment"])
 with tab1:
     with st.form("my_form"):
         ticker_choice = st.selectbox("Select Ticker", list(options.values()))
-        exchanges_choice = st.selectbox("Select Ticker", exchanges_list)
+        exchanges_choice = st.selectbox("Select Market Exchange", exchanges_list)
         ticker_symbol = [key for key, value in options.items() if value == ticker_choice][0]
         st.session_state.ticker = ticker_symbol  # Set the ticker to session state
         st.session_state.exchange = exchanges_choice
         if st.form_submit_button("Submit"):
             st.session_state.data = ticker()
+            st.cache_data()
             if st.session_state.data.empty:
                 st.error("Ticker not found!")
             else:
@@ -208,7 +211,8 @@ with tab2:
             st.table(st.session_state.days_ahead_prices)
 
 st.sidebar.button("clear cache", on_click=lambda: st.cache_data.clear())
-
+st.cache_data()
+st.cache_resource()
 with tab3:
     with st.form("env_form"):
         st.header("Environment", divider="grey")
@@ -225,21 +229,21 @@ with tab3:
             del st.session_state.model
             st.session_state.model = model
             st.session_state.preds, st.session_state.days_ahead_prices = modeling()
-            preds=st.session_state.preds
-            y_test=st.session_state.y_test
+            preds = st.session_state.preds
+            y_test = st.session_state.y_test
             df[model] = st.session_state.days_ahead_prices
             st.title(model)
             st.dataframe(preds)
-            df["MAPE"]=mape(y_test,preds["preds"])
-            df["MSE"]=mse(y_test,preds["preds"])
+            df["MAPE"] = mape(y_test, preds["preds"])
+            df["MSE"] = mse(y_test, preds["preds"])
+        st.cache_data()
 
         if df is not None:
             ex = st.expander("Prediction")
-            df["mean"] = df.drop(columns=["MAPE","MSE"]).mean(axis=1)
+            df["mean"] = df.drop(columns=["MAPE", "MSE"]).mean(axis=1)
             ex.table(df)
             fig = go.Figure()
-            for i in df.drop(columns=["MAPE","MSE"]).columns:
+            for i in df.drop(columns=["MAPE", "MSE"]).columns:
                 fig.add_trace(go.Scatter(x=df.index, y=df[i], mode="lines", name=i))
             st.plotly_chart(fig)
-
-
+            st.cache_resource()
