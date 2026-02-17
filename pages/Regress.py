@@ -135,7 +135,7 @@ def modeling():
         data["x"] = x_values  # Assign he collected sequences
         data = data.dropna()
         x_train, x_test, y_train, y_test = train_test_split(data["x"].tolist(), data["Mid"], shuffle=False,
-                                                            test_size=0.1)
+                                                            test_size=0.01)
         if st.session_state.tab3_seed is not None:
             seed = st.session_state.tab3_seed
             final_model.random_state = seed
@@ -241,7 +241,7 @@ with tab3:
         if df is not None:
             ex = st.expander("Prediction")
             df["mean"] = df.drop(columns=["MAPE", "MSE"]).mean(axis=1)
-            ex.table(df)
+            ex.table(df.drop(columns=["MAPE","MSE"]))
             fig = go.Figure()
             for i in df.drop(columns=["MAPE", "MSE"]).columns:
                 fig.add_trace(go.Scatter(x=df.index, y=df[i], mode="lines", name=i))

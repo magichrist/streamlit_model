@@ -19,7 +19,7 @@ keys = st.session_state.keys()
 if any(i not in keys for i in
        ["n_samples", "no_of_saving", "data_preprocessing",
         "n_features", "centers_std", "seed", "xcenters", "lock_seed", "xdata", "xy", "model"]):
-    st.session_state.n_samples = 20
+    st.session_state.n_samples = 100
     st.session_state.n_features = 3
     st.session_state.xcenters = 2
     st.session_state.pred_center = 2
