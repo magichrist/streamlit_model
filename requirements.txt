@@ -6,7 +6,7 @@ python-dotenv==1.0.1
 scikit-learn==1.6.1
 scipy==1.15.2
 seaborn==0.13.2
-streamlit==1.42.2
+streamlit==1.54.0
 streamlit-authenticator==0.4.2
 streamlit-chat==0.1.1
 streamlit-extras==0.6.0
