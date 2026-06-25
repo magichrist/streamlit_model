@@ -120,7 +120,7 @@ def model_train():
             fig.set_size_inches(15, 10)
             fig.tight_layout()
             visualizer.show(outpath=None)
-            st.pyplot(fig, clear_figure=True, use_container_width=True)
+            st.pyplot(fig, clear_figure=True, width='stretch')
             plt.clf()
         except Exception as e:
             st.error("KElbow failed.")

@@ -205,7 +205,7 @@ with tab2:
                 showlegend=True,
                 hovermode="x unified",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             st.write("There is always chances of error in prediction.")
             st.write("Good Validation could be cuase of overfitting.")
             st.table(st.session_state.days_ahead_prices)
